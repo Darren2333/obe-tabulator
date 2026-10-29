@@ -1,0 +1,879 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" type="text/css" href="clo_analysis_style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>CLO Analysis Report</title>
+</head>
+<body>
+    <div class="container">
+        <h2 class="text-center">CLO Analysis Report</h2>
+
+        <!-- Course Details Table -->
+        <div class="card mt-3">
+            <div class="card-body">
+                <h4>Course Details</h4>
+                <p><strong>Course Code:</strong> <span id="courseCode"></span></p>
+                <p><strong>Course Name:</strong> <span id="courseName"></span></p>
+                <p><strong>Programme:</strong> <span id="programme"></span></p>
+                <p><strong>Lecturer Name:</strong> <span id="lecturerName"></span></p>
+                <p><strong>Semester:</strong> <span id="semester"></span></p>
+                <p><strong>Total Students:</strong> <span id="totalStudents"></span></p>
+            </div>
+        </div>
+
+        <!-- CLO Benchmark Table -->
+        <div id="clo-benchmark-section" class="table-section">
+            <h3>% of Students Achieving the Benchmark for Each CLO</h3>
+            <table class="table table-bordered" id="clo-benchmark-table">
+                <thead>
+                    <tr>
+                        <th>Learning Outcome</th>
+                        <th>Benchmark</th>
+                        <th>% Achieved</th>
+                        <th>Remark</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- CLO Benchmark Rows will be dynamically added here -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- LO Benchmark Table -->
+        <div id="lo-benchmark-section" class="table-section">
+            <h3>% of Students Achieving the Total Learning Outcomes</h3>
+            <table class="table table-bordered" id="lo-benchmark-table">
+                <thead>
+                    <tr>
+                        <th>Total LOs</th>
+                        <th>Number of Students Achieved</th>
+                        <th>% Achieved</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- LO Benchmark Rows will be dynamically added here -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Cognitive Domains Benchmark Table -->
+        <div id="cognitive-benchmark-section" class="table-section">
+            <h3>% of Students Achieving the Benchmark for Cognitive Domains</h3>
+            <table class="table table-bordered" id="cognitive-benchmark-table">
+                <thead>
+                    <tr>
+                        <th>Cognitive Domains</th>
+                        <th>Benchmark</th>
+                        <th>% Achieved</th>
+                        <th>Remark</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Cognitive Domain Benchmark Rows will be dynamically added here -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Cognitive Domains Achievement Table -->
+        <div id="cognitive-achievement-section" class="table-section">
+            <h3>% of Students Achieving the Cognitive Domains</h3>
+            <table class="table table-bordered" id="cognitive-achievement-table">
+                <thead>
+                    <tr>
+                        <th>LO</th>
+                        <th>Total Achieved</th>
+                        <th>% Achieved</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Cognitive Domain Achievement Rows will be dynamically added here -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="chart-container" style="position: relative; height:40vh; width:80vw">
+            <canvas id="learning-outcome-chart"></canvas>
+        </div>
+
+        <div class="chart-container" style="position: relative; height:40vh; width:80vw">
+            <canvas id="cognitive-domain-chart"></canvas>
+        </div>
+
+    <!-- SQL Table -->
+    <div class="table-section">
+        <h3>CLO Performance Data</h3>
+        <form id="submitCLOForm" action="store_clo_data.php" method="POST">
+            <input type="hidden" name="course_code" id="hiddenCourseCode">
+            <input type="hidden" name="course_name" id="hiddenCourseName">
+            <input type="hidden" name="programme" id="hiddenProgramme">
+            <input type="hidden" name="lecturer_name" id="hiddenLecturerName">
+            <input type="hidden" name="semester" id="hiddenSemester">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Student Name</th>
+                        <th>Student ID</th>
+                        <th>CLO1</th>
+                        <th>CLO2</th>
+                        <th>CLO3</th>
+                        <th>CLO4</th>
+                        <th>CLO5</th>
+                        <th>CLO6</th>
+                        <th>Total CLO</th>
+                        <!-- Dynamic cognitive domain columns will be added here -->
+                    </tr>
+                </thead>
+                <tbody id="cloDataTable">
+                    <!-- Rows dynamically added -->
+                </tbody>
+            </table>
+            <button type="submit" class="btn btn-primary btn-submit" id="okButton">OK</button>
+        </form>
+    </div>
+
+    <div class="text-center mt-4">
+        <button id="printButton" class="btn btn-primary btn-lg">Print Report</button>
+    </div>
+</div>    
+
+    <script>
+        let studentData;
+
+        document.addEventListener("DOMContentLoaded", function () {
+            try {
+                studentData = JSON.parse(localStorage.getItem("studentData"));
+                const moduleData = JSON.parse(localStorage.getItem("moduleData"));
+                const passMarks = JSON.parse(localStorage.getItem("passMarks")) || {};
+        
+                console.log("=== Initial Data Load ===");
+                console.log("Student Data:", studentData);
+                console.log("Module Data:", moduleData);
+                console.log("Pass Marks:", passMarks);
+        
+                if (!studentData || !Array.isArray(studentData) || studentData.length === 0) {
+                    throw new Error("No student data found in localStorage.");
+                }
+        
+                // Ensure all students have IDs
+                studentData = studentData.map((student, index) => ({
+                    ...student,
+                    id: student.id || student.student_id || `${(index + 1).toString().padStart(3, '0')}`,
+                    student_id: student.student_id || student.id || `${(index + 1).toString().padStart(3, '0')}`,
+                    name: student.name || student.student_name || `Student ${index + 1}`,
+                    student_name: student.student_name || student.name || `Student ${index + 1}`
+                }));
+        
+                localStorage.setItem("studentData", JSON.stringify(studentData));
+        
+                if (!studentData || studentData.length === 0 || !moduleData || !moduleData.courseworkRows) {
+                    alert("Missing data! Please return to the main or student page to input the required data.");
+                    return;
+                }
+        
+                // Populate Course Details
+                document.getElementById("courseCode").textContent = moduleData.courseCode;
+                document.getElementById("courseName").textContent = moduleData.courseName;
+                document.getElementById("programme").textContent = moduleData.programme;
+                document.getElementById("lecturerName").textContent = moduleData.lecturerName;
+                document.getElementById("semester").textContent = moduleData.semester;
+                document.getElementById("totalStudents").textContent = moduleData.totalStudents;
+        
+                // Populate hidden inputs
+                document.getElementById("hiddenCourseCode").value = moduleData.courseCode || "";
+                document.getElementById("hiddenCourseName").value = moduleData.courseName || "";
+                document.getElementById("hiddenProgramme").value = moduleData.programme || "";
+                document.getElementById("hiddenLecturerName").value = moduleData.lecturerName || "";
+                document.getElementById("hiddenSemester").value = moduleData.semester || "";
+        
+                console.log("Raw Coursework Weight:", moduleData.courseworkWeight);
+                console.log("Raw Exam Weight:", moduleData.examWeight);
+        
+                const courseworkWeight = parseFloat(moduleData.courseworkWeight || "0");
+                const examWeight = parseFloat(moduleData.examWeight || "0");
+                const totalCLOs = 6;
+        
+                console.log("Validating weights:", {
+                    courseworkWeight,
+                    examWeight,
+                    total: courseworkWeight + examWeight,
+                    rawCourseworkWeight: moduleData.courseworkWeight,
+                    rawExamWeight: moduleData.examWeight
+                });
+        
+                // Check if at least one assessment type has weight
+                if (courseworkWeight === 0 && examWeight === 0) {
+                    console.error("Both weights are zero. At least one should have a value.");
+                    alert("Error: At least one assessment type (coursework or exam) must have a weight greater than 0.");
+                    return;
+                }
+        
+                // Allow combinations that sum to 100
+                const totalWeight = Math.round((courseworkWeight + examWeight) * 100) / 100; // Handle floating point precision
+                if (totalWeight !== 100) {
+                    console.error(`Weights do not sum to 100%. Found: ${totalWeight}`);
+                    console.log("Individual weights:", { courseworkWeight, examWeight });
+                    alert("Error: Total weightage must equal 100%. Please check your inputs.");
+                    return;
+                }
+        
+                // If validation passes, normalize the weights
+                const normalizedCourseworkWeight = courseworkWeight / 100;
+                const normalizedExamWeight = examWeight / 100;
+        
+                console.log("Coursework Weight:", normalizedCourseworkWeight);
+                console.log("Exam Weight:", normalizedExamWeight);
+        
+                const cloBenchmarks = calculateCLOBenchmarks(
+                    studentData, 
+                    moduleData, 
+                    passMarks, 
+                    totalCLOs,
+                    normalizedExamWeight  // Pass the normalized exam weight
+                );
+                const loBenchmarks = calculateLOBenchmarks(studentData, moduleData, passMarks, totalCLOs);
+        
+                console.log("CLO Benchmarks:", cloBenchmarks);
+                console.log("LO Benchmarks:", loBenchmarks);
+        
+                populateCLOBenchmarkTable(cloBenchmarks, studentData.length);
+                populateLOBenchmarkTable(loBenchmarks, studentData.length);
+                populateCLODataTable(studentData, moduleData, passMarks, cloBenchmarks, normalizedExamWeight);
+                populateCognitiveBenchmarkTable(studentData, moduleData, passMarks);
+                populateCognitiveAchievementTable(studentData, moduleData, passMarks);
+            } catch (error) {
+                console.error("Error during DOMContentLoaded:", error);
+                alert("Error: " + error.message);
+            }
+        });
+
+        function calculateCLOBenchmarks(studentData, moduleData, passMarks, totalCLOs, examWeight) {
+            const cloBenchmarks = Array(6).fill(0).map(() => ({ total: 0, achieved: 0 }));
+            const courseworkWeight = 1 - examWeight; // Calculate coursework weight (e.g., 0.6 if exam is 0.4)
+
+            // Calculate benchmarks
+            moduleData.courseworkRows.forEach((coursework, courseworkIndex) => {
+                coursework.clos.forEach(clo => {
+                    const cloIndex = parseInt(clo.lo.replace("LO", "")) - 1;
+                    const passMark = passMarks[coursework.details]?.clo[cloIndex] || 0;
+                    const benchmark = (clo.percent * passMark) / 100;
+                    cloBenchmarks[cloIndex].total = benchmark;
+                });
+            });
+
+            moduleData.finalExamRows.forEach((exam, examIndex) => {
+                exam.clos.forEach(clo => {
+                    const cloIndex = parseInt(clo.lo.replace("LO", "")) - 1;
+                    const passMark = passMarks[exam.details]?.clo[cloIndex] || 0;
+                    const benchmark = (clo.percent * passMark) / 100;
+                    cloBenchmarks[cloIndex].total = benchmark;
+                });
+            });
+
+            // Calculate achievements
+            studentData.forEach(student => {
+                // Check coursework achievements
+                moduleData.courseworkRows.forEach((coursework, courseworkIndex) => {
+                    coursework.clos.forEach(clo => {
+                        const cloIndex = parseInt(clo.lo.replace("LO", "")) - 1;
+                        const rawScore = student.coursework[courseworkIndex] || 0;
+                        const weightedScore = rawScore * courseworkWeight;
+                        const passMark = passMarks[coursework.details]?.clo[cloIndex] || 0;
+                        const benchmark = ((clo.percent * passMark) / 100) * courseworkWeight;
+
+                        console.log(`Coursework - Student: ${student.name}, CLO${cloIndex + 1}:`, {
+                            rawScore,
+                            weightedScore,
+                            benchmark,
+                            courseworkWeight
+                        });
+
+                        if (weightedScore >= benchmark) {
+                            cloBenchmarks[cloIndex].achieved++;
+                        }
+                    });
+                });
+
+                // Check final exam achievements
+                moduleData.finalExamRows.forEach((exam, examIndex) => {
+                    exam.clos.forEach(clo => {
+                        const cloIndex = parseInt(clo.lo.replace("LO", "")) - 1;
+                        const rawScore = student.finalExam[examIndex] || 0;
+                        const weightedScore = rawScore * examWeight;
+                        const passMark = passMarks[exam.details]?.clo[cloIndex] || 0;
+                        const benchmark = ((clo.percent * passMark) / 100) * examWeight;
+
+                        console.log(`Exam - Student: ${student.name}, CLO${cloIndex + 1}:`, {
+                            rawScore,
+                            weightedScore,
+                            benchmark,
+                            examWeight
+                        });
+
+                        if (weightedScore >= benchmark) {
+                            cloBenchmarks[cloIndex].achieved++;
+                        }
+                    });
+                });
+            });
+
+            console.log("Final CLO Benchmarks:", cloBenchmarks);
+            return cloBenchmarks;
+        }
+
+        function calculateLOBenchmarks(studentData, moduleData, passMarks, totalCLOs) {
+            const loBenchmarks = Array(totalCLOs).fill(0).map(() => ({ total: 0, achieved: 0 }));
+
+            studentData.forEach(student => {
+                // Check coursework performance
+                moduleData.courseworkRows.forEach((coursework, courseworkIndex) => {
+                    coursework.clos.forEach(clo => {
+                        const cloIndex = parseInt(clo.lo.replace("LO", "")) - 1;
+                        const passMark = passMarks[coursework.details]?.clo[cloIndex] || 0;
+                        const benchmark = (clo.percent * passMark) / 100;
+                        const score = student.coursework[courseworkIndex] || 0;
+
+                        loBenchmarks[cloIndex].total++;
+                        if (score >= benchmark) {
+                            loBenchmarks[cloIndex].achieved++;
+                        }
+                    });
+                });
+
+                // Check final exam performance
+                moduleData.finalExamRows.forEach((finalExam, finalExamIndex) => {
+                    finalExam.clos.forEach(clo => {
+                        const cloIndex = parseInt(clo.lo.replace("LO", "")) - 1;
+                        const passMark = passMarks[finalExam.details]?.clo[cloIndex] || 0;
+                        const benchmark = (clo.percent * passMark) / 100;
+                        const score = student.finalExam[finalExamIndex] || 0;
+
+                        loBenchmarks[cloIndex].total++;
+                        if (score >= benchmark) {
+                            loBenchmarks[cloIndex].achieved++;
+                        }
+                    });
+                });
+            });
+
+            return loBenchmarks;
+        }
+
+        function populateCLOBenchmarkTable(cloBenchmarks, totalStudents) {
+            const cloBenchmarkTable = document.getElementById("clo-benchmark-table").querySelector("tbody");
+            cloBenchmarkTable.innerHTML = "";
+
+            cloBenchmarks.forEach((clo, index) => {
+                const percentAchieved = clo.total ? ((clo.achieved / totalStudents) * 100).toFixed(2) : 0;
+                
+                let remark;
+                if (clo.total === 0) {
+                    remark = "NA";
+                } else if (percentAchieved >= 50) {
+                    remark = "Achieved";
+                } else {
+                    remark = "Review Needed";
+                }
+
+                cloBenchmarkTable.innerHTML += `
+                <tr>
+                    <td>CLO${index + 1}</td>
+                    <td>${clo.total.toFixed(2)}</td>
+                    <td>${percentAchieved}%</td>
+                    <td>${remark}</td>
+                    </tr>
+                    `;
+                });
+            }
+
+        function populateLOBenchmarkTable(loBenchmarks, totalStudents) {
+            const loBenchmarkTable = document.getElementById("lo-benchmark-table").querySelector("tbody");
+            loBenchmarkTable.innerHTML = "";
+
+            const chartLabels = [];
+            const chartData = [];
+
+            loBenchmarks.forEach((lo, index) => {
+                const percentAchieved = lo.total ? ((lo.achieved / lo.total) * 100).toFixed(2) : 0;
+                loBenchmarkTable.innerHTML += `
+                    <tr>
+                        <td>CLO${index + 1}</td>
+                        <td>${lo.achieved}</td>
+                        <td>${percentAchieved}%</td>
+                    </tr>
+                `;
+                chartLabels.push(`CLO${index + 1}`);
+                chartData.push(percentAchieved);
+            });
+
+            // Render the chart
+            const ctx = document.getElementById('learning-outcome-chart').getContext('2d');
+            const myChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        label: '% of Students Achieving the Learning Outcomes',
+                        data: chartData,
+                        backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                stepSize: 10
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function getShortDomain(domain) {
+            const domainAbbreviations = {
+                'Remembering': 'R',
+                'Understanding': 'U',
+                'Applying': 'AP',
+                'Analysing': 'A',
+                'Evaluating': 'E',
+                'Creating': 'C',
+                'Psychomotor': 'P',
+                'Affective': 'AF'
+            };
+            return domainAbbreviations[domain] || domain.charAt(0).toUpperCase();
+        }
+
+        function populateCLODataTable(studentData, moduleData, passMarks, cloBenchmarks, examWeight) {
+            const courseworkWeight = 1 - examWeight;
+            const cloTable = document.getElementById("cloDataTable");
+            
+            // Get unique cognitive domains from coursework and final exam
+            const uniqueDomains = new Set();
+            [...moduleData.courseworkRows, ...moduleData.finalExamRows].forEach(assessment => {
+                assessment.clos.forEach(clo => {
+                    if (clo.domain) {
+                        uniqueDomains.add(clo.domain);
+                    }
+                });
+            });
+
+            console.log("Unique domains found:", Array.from(uniqueDomains));
+
+            // Update table header to include cognitive domains
+            const headerRow = cloTable.parentElement.querySelector("thead tr");
+            Array.from(uniqueDomains).forEach(domain => {
+                const th = document.createElement("th");
+                th.textContent = getShortDomain(domain);
+                headerRow.appendChild(th);
+            });
+
+            // Clear existing table content
+            cloTable.innerHTML = "";
+
+            studentData.forEach((student, index) => {
+                const row = document.createElement("tr");
+                const cloResults = Array(6).fill("NA");
+                const domainResults = {};
+                uniqueDomains.forEach(domain => {
+                    domainResults[domain] = "NA";
+                });
+
+                const cloAchievements = new Array(6).fill(false);
+
+                // Process coursework
+                moduleData.courseworkRows.forEach((coursework, courseworkIndex) => {
+                    coursework.clos.forEach(clo => {
+                        const cloIndex = parseInt(clo.lo.replace("LO", "")) - 1;
+                        const domain = clo.domain;
+                        const passMark = passMarks[coursework.details]?.clo[cloIndex] || 0;
+                        const rawScore = student.coursework[courseworkIndex] || 0;
+                        const weightedScore = rawScore * courseworkWeight;
+                        const benchmark = ((clo.percent * passMark) / 100) * courseworkWeight;
+
+                        console.log(`Coursework - Student: ${student.name}, CLO${cloIndex + 1}:`, {
+                            rawScore,
+                            weightedScore,
+                            benchmark,
+                            courseworkWeight
+                        });
+
+                        if (weightedScore >= benchmark) {
+                            cloAchievements[cloIndex] = true;
+                            if (domain) {
+                                domainResults[domain] = "Achieved";
+                            }
+                        }
+                    });
+                });
+
+                // Process final exams
+                moduleData.finalExamRows.forEach((finalExam, finalExamIndex) => {
+                    finalExam.clos.forEach(clo => {
+                        const cloIndex = parseInt(clo.lo.replace("LO", "")) - 1;
+                        const domain = clo.domain;
+                        const passMark = passMarks[finalExam.details]?.clo[cloIndex] || 0;
+                        const rawScore = student.finalExam[finalExamIndex] || 0;
+                        const weightedScore = rawScore * examWeight;
+                        const benchmark = ((clo.percent * passMark) / 100) * examWeight;
+
+                        console.log(`Exam - Student: ${student.name}, CLO${cloIndex + 1}:`, {
+                            rawScore,
+                            weightedScore,
+                            benchmark,
+                            examWeight
+                        });
+
+                        if (weightedScore >= benchmark) {
+                            cloAchievements[cloIndex] = true;
+                            if (domain) {
+                                domainResults[domain] = "Achieved";
+                            }
+                        }
+                    });
+                });
+
+                // Set final CLO results
+                cloResults.forEach((_, index) => {
+                    if (cloAchievements[index]) {
+                        cloResults[index] = "Achieved";
+                    } else {
+                        const hasCLO = moduleData.courseworkRows.some(cw => 
+                            cw.clos.some(clo => parseInt(clo.lo.replace("LO", "")) - 1 === index)
+                        ) || moduleData.finalExamRows.some(fe => 
+                            fe.clos.some(clo => parseInt(clo.lo.replace("LO", "")) - 1 === index)
+                        );
+                        cloResults[index] = hasCLO ? "No" : "NA";
+                    }
+                });
+
+                const totalAchievedCLOs = cloResults.filter(result => result === "Achieved").length;
+
+                row.innerHTML = `
+                    <td>${student.name || `Student ${index + 1}`}</td>
+                    <td><input type="text" name="student_ids[]" class="form-control" required value="${student.id || ''}" placeholder="Enter ID"></td>
+                    ${cloResults.map(result => `<td>${result}</td>`).join('')}
+                    <td>${totalAchievedCLOs}</td>
+                    ${Array.from(uniqueDomains).map(domain => 
+                        `<td>${domainResults[domain] === "NA" ? "NA" : 
+                               domainResults[domain] === "Achieved" ? "Achieved" : "No"}</td>`
+                    ).join('')}
+                `;
+
+                cloTable.appendChild(row);
+            });
+        }
+
+        async function fetchCLOData(courseCode) {
+            const response = await fetch(`get_clo_plo_mapping.php?course_code=${courseCode}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch CLO data');
+            }
+            return response.json();
+        }
+
+        document.getElementById("okButton").addEventListener("click", async function(event) {
+            event.preventDefault();
+
+            try {
+                // Get student data from table including IDs
+                const tableRows = document.querySelectorAll("#cloDataTable tr");
+                const cloAchievementData = Array.from(tableRows).map(row => {
+                    const studentId = row.querySelector('input[type="text"]').value.trim();
+                    console.log("Processing student row:", {
+                        name: row.cells[0].textContent.trim(),
+                        id: studentId
+                    });
+                    
+                    return {
+                        student_name: row.cells[0].textContent.trim(),
+                        student_id: studentId,
+                        clo1: row.cells[2].textContent.trim(),
+                        clo2: row.cells[3].textContent.trim(),
+                        clo3: row.cells[4].textContent.trim(),
+                        clo4: row.cells[5].textContent.trim(),
+                        clo5: row.cells[6].textContent.trim(),
+                        clo6: row.cells[7].textContent.trim(),
+                        total_clo: row.cells[8].textContent.trim(),
+                        domain_r: row.cells[9]?.textContent.trim() || "NA",
+                        domain_u: row.cells[10]?.textContent.trim() || "NA",
+                        domain_ap: row.cells[11]?.textContent.trim() || "NA",
+                        domain_a: row.cells[12]?.textContent.trim() || "NA",
+                        domain_e: row.cells[13]?.textContent.trim() || "NA",
+                        domain_c: row.cells[14]?.textContent.trim() || "NA",
+                        domain_p: row.cells[15]?.textContent.trim() || "NA",
+                        domain_af: row.cells[16]?.textContent.trim() || "NA"
+                    };
+                });
+
+                // Create the data object for PHP
+                const dataToSubmit = {
+                    courseDetails: {
+                        course_code: document.getElementById("hiddenCourseCode").value,
+                        course_name: document.getElementById("hiddenCourseName").value,
+                        programme_code: document.getElementById("hiddenProgramme").value,
+                        lecturer_name: document.getElementById("hiddenLecturerName").value,
+                        semester: document.getElementById("hiddenSemester").value
+                    },
+                    studentData: cloAchievementData
+                };
+
+                console.log("Submitting data:", dataToSubmit);
+
+                // Send data to PHP
+                const response = await fetch('store_clo_data.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        clo_data: JSON.stringify(dataToSubmit)
+                    })
+                });
+
+                const result = await response.json();
+                console.log("Server response:", result);
+
+                if (!result.success) {
+                    throw new Error(result.message || 'Failed to save data');
+                }
+
+                window.location.href = 'plo_analysis_report.html';
+
+            } catch (error) {
+                console.error("Error saving data:", error);
+                alert("Error saving data: " + error.message);
+            }
+        });
+
+        function createHiddenField(name, value) {
+            const input = document.createElement("input");
+            input.type = "hidden";
+            input.name = name;
+            input.value = value;
+            return input;
+        }
+
+        function populateCognitiveBenchmarkTable(studentData, moduleData, passMarks) {
+            console.log("=== Cognitive Benchmark Table Data ===");
+    
+            const cognitiveDomains = [
+            'Remembering', 'Understanding', 'Applying', 'Analysing',
+            'Evaluating', 'Creating', 'Psychomotor', 'Affective'
+        ];
+    
+        const cognitiveTable = document.getElementById("cognitive-benchmark-table").querySelector("tbody");
+        cognitiveTable.innerHTML = "";
+    
+        const totalStudents = studentData.length;
+        const domainResults = {};
+
+        // Initialize domain results
+        cognitiveDomains.forEach(domain => {
+            domainResults[domain] = {
+                benchmark: 0,
+                achieved: 0,
+                total: 0
+            };
+        });
+
+        // Process coursework
+        moduleData.courseworkRows.forEach((coursework, courseworkIndex) => {
+            coursework.clos.forEach(clo => {
+                const domain = clo.domain;
+                if (domain) {
+                    const cloIndex = parseInt(clo.lo.replace("LO", "")) - 1;
+                    const passMark = passMarks[coursework.details]?.clo[cloIndex] || 0;
+                    const benchmark = (parseFloat(clo.percent) * passMark) / 100;
+                
+                domainResults[domain].benchmark = Math.max(domainResults[domain].benchmark, benchmark);
+                
+                studentData.forEach(student => {
+                    const score = student.coursework[courseworkIndex] || 0;
+                    console.log(`Coursework - Student: ${student.name}, Domain: ${domain}, Score: ${score}, Benchmark: ${benchmark}`);
+                    
+                    if (score >= benchmark) {
+                        domainResults[domain].achieved++;
+                    }
+                    domainResults[domain].total++;
+                });
+            }
+        });
+    });
+
+    // Process final exams
+    moduleData.finalExamRows.forEach((exam, examIndex) => {
+        exam.clos.forEach(clo => {
+            const domain = clo.domain;
+            if (domain) {
+                const cloIndex = parseInt(clo.lo.replace("LO", "")) - 1;
+                const passMark = passMarks[exam.details]?.clo[cloIndex] || 0;
+                const benchmark = (parseFloat(clo.percent) * passMark) / 100;
+                
+                domainResults[domain].benchmark = Math.max(domainResults[domain].benchmark, benchmark);
+                
+                studentData.forEach(student => {
+                    const score = student.finalExam[examIndex] || 0;
+                    console.log(`Exam - Student: ${student.name}, Domain: ${domain}, Score: ${score}, Benchmark: ${benchmark}`);
+                    
+                    if (score >= benchmark) {
+                        domainResults[domain].achieved++;
+                    }
+                    domainResults[domain].total++;
+                });
+            }
+        });
+    });
+
+    cognitiveDomains.forEach(domain => {
+        const totalBenchmark = domainResults[domain].benchmark;
+        const totalAchieved = domainResults[domain].achieved;
+        const totalAssessed = domainResults[domain].total;
+        
+        const percentAchieved = totalAssessed > 0 ?     
+        ((totalAchieved / totalAssessed) * 100).toFixed(2) : 0;
+        
+        let remark;
+        if (totalBenchmark === 0) {
+            remark = "NA";
+        } else if (percentAchieved >= 50) {
+            remark = "Achieved";
+        } else {
+            remark = "Review Needed";
+        }
+        
+        cognitiveTable.innerHTML += `
+            <tr>
+                <td>${domain}</td>
+                <td>${totalBenchmark.toFixed(2)}</td>
+                <td>${percentAchieved}%</td>
+                <td>${remark}</td>
+            </tr>
+            `;
+        });
+    }
+
+
+    function populateCognitiveAchievementTable(studentData, moduleData, passMarks) {
+    console.log("=== Cognitive Achievement Table Data ===");
+
+    const cognitiveDomains = [
+        'Remembering', 'Understanding', 'Applying', 'Analysing',
+        'Evaluating', 'Creating', 'Psychomotor', 'Affective'
+    ];
+
+    const achievementTable = document.getElementById("cognitive-achievement-table").querySelector("tbody");
+    achievementTable.innerHTML = "";
+
+    const totalStudents = studentData.length;
+    const domainAchievements = {};
+    const chartLabels = [];
+    const chartData = [];
+
+    cognitiveDomains.forEach(domain => {
+        domainAchievements[domain] = 0;
+    });
+
+    studentData.forEach(student => {
+        console.log(`Processing student: ${student.name}`);
+        const achievedDomains = new Set();
+
+        // Process coursework
+        moduleData.courseworkRows.forEach((coursework, courseworkIndex) => {
+            coursework.clos.forEach(clo => {
+                const domain = clo.domain;
+                if (domain) {
+                    const cloIndex = parseInt(clo.lo.replace("LO", "")) - 1;
+                    const passMark = passMarks[coursework.details]?.clo[cloIndex] || 0;
+                    const benchmark = (parseFloat(clo.percent) * passMark) / 100;
+                    const score = student.coursework[courseworkIndex] || 0;
+
+                    console.log(`Coursework - Domain: ${domain}, Score: ${score}, Benchmark: ${benchmark}`);
+                    if (score >= benchmark) {
+                        achievedDomains.add(domain);
+                    }
+                }
+            });
+        });
+
+        // Process final exams
+        moduleData.finalExamRows.forEach((exam, examIndex) => {
+            exam.clos.forEach(clo => {
+                const domain = clo.domain;
+                if (domain) {
+                    const cloIndex = parseInt(clo.lo.replace("LO", "")) - 1;
+                    const passMark = passMarks[exam.details]?.clo[cloIndex] || 0;
+                    const benchmark = (parseFloat(clo.percent) * passMark) / 100;
+                    const score = student.finalExam[examIndex] || 0;
+
+                    console.log(`Final Exam - Domain: ${domain}, Score: ${score}, Benchmark: ${benchmark}`);
+                    if (score >= benchmark) {
+                        achievedDomains.add(domain);
+                    }
+                }
+            });
+        });
+
+        achievedDomains.forEach(domain => {
+            domainAchievements[domain]++;
+            console.log(`Student ${student.name} achieved domain: ${domain}`);
+        });
+    });
+
+    cognitiveDomains.forEach(domain => {
+        const achieved = domainAchievements[domain];
+        const percentAchieved = ((achieved / totalStudents) * 100).toFixed(2);
+
+        achievementTable.innerHTML += `
+            <tr>
+                <td>${domain}</td>
+                <td>${achieved}</td>
+                <td>${percentAchieved}%</td>
+            </tr>
+        `;
+
+        chartLabels.push(domain);
+        chartData.push(percentAchieved);
+    });
+
+    // Render the chart
+    const ctx = document.getElementById('cognitive-domain-chart').getContext('2d');
+    const myChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: chartLabels,
+            datasets: [{
+                label: '% Achieved on Cognitive Domains',
+                data: chartData,
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        stepSize: 10
+                    }
+                }
+            }
+        }
+    });
+}
+
+document.getElementById("printButton").addEventListener("click", function () {
+    window.print();
+});
+    </script>
+</body>
+</html>

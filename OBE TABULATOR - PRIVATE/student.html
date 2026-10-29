@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" type="text/css" href="student_style.css">
+    <title>Student Marks Form</title>
+</head>
+<body>
+    <div class="container">
+        <h2 class="text-center">Student Table</h2>
+        <div id="coursework-section" class="table-section">
+            <h3>Coursework</h3>
+            <table class="table table-bordered" id="coursework-table">
+                <thead>
+                    <tr id="coursework-headers">
+                        <th>Student Name</th>
+                        <!-- Coursework headers dynamically added -->
+                        <th class="total-column">Total Marks</th>
+                    </tr>
+                    <tr id="coursework-los">
+                        <th>Learning Outcomes</th>
+                    </tr>
+                    <tr id="coursework-marks">
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="coursework-body">
+                    <!-- Student rows dynamically added -->
+                </tbody>
+            </table>
+        </div>
+        <div id="final-exam-section" class="table-section">
+            <h3>Final Exam</h3>
+            <table class="table table-bordered" id="final-exam-table">
+                <thead>
+                    <tr id="final-exam-headers">
+                        <th>Student Name</th>
+                        <!-- Final exam headers dynamically added -->
+                        <th class="total-column">Total Marks</th>
+                    </tr>
+                    <tr id="final-exam-los">
+                        <th>Learning Outcomes</th>
+                    </tr>
+                    <tr id="final-exam-marks">
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="final-exam-body">
+                    <!-- Student rows dynamically added -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <button id="nextToCLOAnalysis" class="btn btn-primary btn-lg">Next</button>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const moduleData = JSON.parse(localStorage.getItem("moduleData"));
+
+            if (!moduleData) {
+                alert("No data found! Please go back to the main page.");
+                return;
+            }
+
+            const { totalStudents, courseworkRows, finalExamRows } = moduleData;
+
+            // Function to synchronize student names between tables
+            function syncStudentNames() {
+                const courseworkNameInputs = document.querySelectorAll("#coursework-body tr td input[type='text']");
+                const finalExamNameInputs = document.querySelectorAll("#final-exam-body tr td input[type='text']");
+
+                courseworkNameInputs.forEach((courseworkInput, index) => {
+                    finalExamNameInputs[index].value = courseworkInput.value;
+                });
+            }
+
+            // Check if coursework exists and has entries
+            if (courseworkRows && courseworkRows.length > 0) {
+                document.getElementById("coursework-section").style.display = "block";
+                // Coursework Table Setup
+                const courseworkHeaders = document.getElementById("coursework-headers");
+                const courseworkLos = document.getElementById("coursework-los");
+                const courseworkMarks = document.getElementById("coursework-marks");
+                const courseworkBody = document.getElementById("coursework-body");
+
+                // Clear any existing dynamic content to avoid duplicates
+                courseworkHeaders.innerHTML = `<th>Coursework</th>`;
+                courseworkLos.innerHTML = `<th>Learning Outcomes</th>`;
+                courseworkMarks.innerHTML = `<th>Student Name</th>`;
+
+                // Dynamically add headers and LOs for coursework
+                courseworkRows.forEach(row => {
+                    const th = document.createElement("th");
+                    th.textContent = row.details;
+                    courseworkHeaders.appendChild(th);
+
+                    const loTd = document.createElement("td");
+                    loTd.textContent = row.clos.map(clo => `${clo.lo} (${clo.percent}%)`).join(", ");
+                    courseworkLos.appendChild(loTd);
+
+                    const td = document.createElement("td");
+                    td.textContent = `${row.percent}%`;
+                    courseworkMarks.appendChild(td);
+                });
+
+                // Add a single "Total Marks" header for coursework
+                const totalMarksTh = document.createElement("th");
+                totalMarksTh.textContent = "Total Marks";
+                courseworkHeaders.appendChild(totalMarksTh);
+
+                const totalMarksLoTd = document.createElement("td");
+                totalMarksLoTd.textContent = "";
+                courseworkLos.appendChild(totalMarksLoTd);
+
+                const totalMarksTd = document.createElement("td");
+                totalMarksTd.textContent = "";
+                courseworkMarks.appendChild(totalMarksTd);
+
+                // Populate rows for coursework
+                courseworkBody.innerHTML = ""; // Clear existing rows to avoid duplicates
+                for (let i = 1; i <= totalStudents; i++) {
+                    const row = document.createElement("tr");
+
+                    // Add student name cell
+                    const nameCell = document.createElement("td");
+                    const nameInput = document.createElement("input");
+                    nameInput.type = "text";
+                    nameInput.className = "form-control coursework-name";
+                    nameInput.placeholder = `Student ${i}`;
+                    nameCell.appendChild(nameInput);
+                    row.appendChild(nameCell);
+
+                    // Add input fields for assignments
+                    courseworkRows.forEach(() => {
+                        const cell = document.createElement("td");
+                        const input = document.createElement("input");
+                        input.type = "number";
+                        input.className = "form-control coursework-mark";
+                        input.placeholder = "Enter marks";
+                        cell.appendChild(input);
+                        row.appendChild(cell);
+                    });
+
+                    // Add total marks cell
+                    const totalCell = document.createElement("td");
+                    totalCell.className = "total-coursework-marks";
+                    totalCell.textContent = "0";
+                    row.appendChild(totalCell);
+
+                    // Update total marks dynamically
+                    row.querySelectorAll(".coursework-mark").forEach(input => {
+                        input.addEventListener("input", () => {
+                            const total = Array.from(row.querySelectorAll(".coursework-mark"))
+                                .reduce((sum, input) => sum + (parseFloat(input.value) || 0), 0);
+                            totalCell.textContent = total;
+                        });
+                    });
+
+                    courseworkBody.appendChild(row);
+                }
+            } else {
+                document.getElementById("coursework-section").style.display = "none";
+            }
+
+            // Check if final exam exists and has entries
+            if (finalExamRows && finalExamRows.length > 0) {
+                document.getElementById("final-exam-section").style.display = "block";
+                // Final Exam Table Setup
+                const finalExamHeaders = document.getElementById("final-exam-headers");
+                const finalExamLos = document.getElementById("final-exam-los");
+                const finalExamMarks = document.getElementById("final-exam-marks");
+                const finalExamBody = document.getElementById("final-exam-body");
+
+                // Clear any existing dynamic content to avoid duplicates
+                finalExamHeaders.innerHTML = `<th>Final Exam</th>`;
+                finalExamLos.innerHTML = `<th>Learning Outcomes</th>`;
+                finalExamMarks.innerHTML = `<th>Student Name</th>`;
+
+                // Dynamically add headers and LOs for final exams
+                finalExamRows.forEach(row => {
+                    const th = document.createElement("th");
+                    th.textContent = row.details;
+                    finalExamHeaders.appendChild(th);
+
+                    const loTd = document.createElement("td");
+                    loTd.textContent = row.clos.map(clo => `${clo.lo} (${clo.percent}%)`).join(", ");
+                    finalExamLos.appendChild(loTd);
+
+                    const td = document.createElement("td");
+                    td.textContent = `${row.percent}%`;
+                    finalExamMarks.appendChild(td);
+                });
+
+                // Add "Total Marks" header for final exams
+                const finalTotalTh = document.createElement("th");
+                finalTotalTh.textContent = "Total Marks";
+                finalExamHeaders.appendChild(finalTotalTh);
+
+                const finalTotalLoTd = document.createElement("td");
+                finalTotalLoTd.textContent = "";
+                finalExamLos.appendChild(finalTotalLoTd);
+
+                const finalTotalTd = document.createElement("td");
+                finalTotalTd.textContent = "";
+                finalExamMarks.appendChild(finalTotalTd);
+
+                // Populate rows for final exams
+                finalExamBody.innerHTML = ""; // Clear existing rows to avoid duplicates
+                for (let i = 1; i <= totalStudents; i++) {
+                    const row = document.createElement("tr");
+
+                    // Add student name cell
+                    const nameCell = document.createElement("td");
+                    const nameInput = document.createElement("input");
+                    nameInput.type = "text";
+                    nameInput.className = "form-control final-exam-name";
+                    nameInput.placeholder = `Student ${i}`;
+                    nameCell.appendChild(nameInput);
+                    row.appendChild(nameCell);
+
+                    // Add input fields for final exams
+                    finalExamRows.forEach(() => {
+                        const cell = document.createElement("td");
+                        const input = document.createElement("input");
+                        input.type = "number";
+                        input.className = "form-control final-exam-mark";
+                        input.placeholder = "Enter marks";
+                        cell.appendChild(input);
+                        row.appendChild(cell);
+                    });
+
+                    // Add total marks cell for final exams
+                    const totalCell = document.createElement("td");
+                    totalCell.className = "total-final-marks";
+                    totalCell.textContent = "0";
+                    row.appendChild(totalCell);
+
+                    // Update total marks dynamically
+                    row.querySelectorAll(".final-exam-mark").forEach(input => {
+                        input.addEventListener("input", () => {
+                            const total = Array.from(row.querySelectorAll(".final-exam-mark"))
+                                .reduce((sum, input) => sum + (parseFloat(input.value) || 0), 0);
+                            totalCell.textContent = total;
+                        });
+                    });
+
+                    finalExamBody.appendChild(row);
+                }
+            } else {
+                document.getElementById("final-exam-section").style.display = "none";
+            }
+
+            // Attach event listeners to coursework name inputs
+            const courseworkNameInputs = document.querySelectorAll("#coursework-body tr td input[type='text']");
+            courseworkNameInputs.forEach(input => {
+                input.addEventListener("input", syncStudentNames);
+            });
+
+            // Call syncStudentNames initially to populate final exam names if coursework names are already filled
+            syncStudentNames();
+
+            // Modify the Next button click handler to only collect data from visible tables
+            document.getElementById("nextToCLOAnalysis").addEventListener("click", function () {
+                let studentData = [];
+
+                // Initialize all students with empty arrays
+                for (let i = 0; i < totalStudents; i++) {
+                    studentData.push({
+                        name: `Student ${i + 1}`,
+                        id: '',
+                        coursework: [],
+                        finalExam: []
+                    });
+                }
+
+                // Process coursework section if visible
+                if (document.getElementById("coursework-section").style.display !== "none") {
+                    document.querySelectorAll("#coursework-body tr").forEach((row, index) => {
+                        let nameInput = row.querySelector("td input[type='text']");
+                        let studentName = nameInput.value.trim() || `Student ${index + 1}`;
+                        let scores = [...row.querySelectorAll("td input[type='number']")]
+                            .map(input => parseFloat(input.value) || 0);
+
+                        if (studentData[index]) {
+                            studentData[index].name = studentName;
+                            studentData[index].coursework = scores;
+                            // Add default ID if not present
+                            studentData[index].id = `${(index + 1).toString().padStart(3, '0')}`; // e.g., "001"
+                            studentData[index].student_id = studentData[index].id; // Add both formats
+                        }
+                    });
+                }
+
+                // Process final exam section if visible
+                if (document.getElementById("final-exam-section").style.display !== "none") {
+                    document.querySelectorAll("#final-exam-body tr").forEach((row, index) => {
+                        let scores = [...row.querySelectorAll("td input[type='number']")]
+                            .map(input => parseFloat(input.value) || 0);
+
+                        if (studentData[index]) {
+                            studentData[index].finalExam = scores;
+                        }
+                    });
+                }
+
+                console.log("Final Student Data:", studentData);
+                localStorage.setItem("studentData", JSON.stringify(studentData.map(student => ({
+                    ...student,
+                    student_id: student.id, // Ensure both ID formats are present
+                    student_name: student.name // Ensure both name formats are present
+                }))));
+                window.location.href = "clo_analysis_report.html";
+            });
+        });
+    </script>        
+</body>
+</html>

@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" type="text/css" href="main_page_style.css">
+    <title>Module Details</title>
+</head>
+<body>
+    <div class="container">
+        <h2>Module Details</h2>
+        <!-- Module Details Section -->
+        <div class="form-group">
+            <label for="programme">Programme:</label>
+            <select id="programme" name="programme">
+                <option value="">Select Programme</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="courseCode">Course Code:</label>
+            <select id="courseCode" name="courseCode" disabled>
+                <option value="">Select Course Code</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="courseName">Course Name:</label>
+            <input type="text" id="courseName" name="courseName" readonly>
+        </div>
+        <div class="form-group">
+            <label for="lecturerName">Lecturer Name:</label>
+            <input type="text" id="lecturerName" name="lecturerName">
+        </div>
+        <div class="form-group">
+            <label for="semester">Semester:</label>
+            <input type="text" id="semester" name="semester">
+        </div>
+        <div class="form-group">
+            <label for="totalStudents">Total Students:</label>
+            <input type="number" id="totalStudents" name="totalStudents">
+        </div>
+        <div class="form-group">
+            <label for="courseworkWeight">Coursework Weightage:</label>
+            <input type="number" id="courseworkWeight" name="courseworkWeight" min="0" max="100">
+        </div>
+        <div class="form-group">
+            <label for="examWeight">Examination Weightage:</label>
+            <input type="number" id="examWeight" name="examWeight" min="0" max="100">
+        </div>
+        <div id="weightageError" style="color: red; display: none;">The combined weightage cannot exceed 100.</div>
+    </div>
+
+    <!-- Course Learning Outcome Table -->
+    <div class="container mt-5">
+        <h2 class="mb-4">Course Learning Outcome</h2>
+        <table class="table table-bordered" id="cloTable">
+            <thead class="table-dark"> 
+                <tr>  
+                    <th>CLO Code</th>
+                    <th>Description (with Cluster & PLO)</th>
+                    <th>Bloom Taxonomy</th>          
+                    <th>PLO</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- CLO rows will be dynamically added here -->
+            </tbody>
+        </table>
+    </div>
+
+    <div class="container mt-5">
+        <!-- Coursework Section -->
+        <h2 class="mb-4">Coursework</h2>
+        <table class="table table-bordered">
+            <thead class="table-dark">
+                <tr>
+                    <th>Coursework Details</th>
+                    <th>% Assigned</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="coursework-table">
+                <tr>
+
+                </tr>
+            </tbody>
+        </table>
+        <button type="button" class="btn btn-success btn-sm" id="addCourseworkRow">Add Coursework</button>
+    </div>
+
+    <div class="container mt-5 final-exam-section">
+        <!-- Final Exam Section -->
+        <h2 class="mb-4">Final Exam</h2>
+        <table class="table table-bordered">
+            <thead class="table-dark">
+                <tr>
+                    <th>Final Exam Details</th>
+                    <th>% Assigned</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="finalExam-table">
+                
+            </tbody>
+        </table>
+        <button type="button" class="btn btn-success btn-sm" id="addFinalExamRow">Add Final Exam</button>
+    </div>
+    
+    <div class="accordion" id="cloAccordion">
+        <!-- Accordion items for coursework and final exam will be added here dynamically -->
+    </div>
+
+    <div class="modal fade" id="passMarkModal" tabindex="-1" role="dialog" aria-labelledby="passMarkModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="passMarkModalLabel">Pass Mark Configuration</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h4>Course Learning Outcome (CLO) Pass Marks</h4>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>CLO1</th>
+                                <th>CLO2</th>
+                                <th>CLO3</th>
+                                <th>CLO4</th>
+                                <th>CLO5</th>
+                                <th>CLO6</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><input type="number" class="form-control clo-pass-mark" placeholder="%" min="0" max="100"></td>
+                                <td><input type="number" class="form-control clo-pass-mark" placeholder="%" min="0" max="100"></td>
+                                <td><input type="number" class="form-control clo-pass-mark" placeholder="%" min="0" max="100"></td>
+                                <td><input type="number" class="form-control clo-pass-mark" placeholder="%" min="0" max="100"></td>
+                                <td><input type="number" class="form-control clo-pass-mark" placeholder="%" min="0" max="100"></td>
+                                <td><input type="number" class="form-control clo-pass-mark" placeholder="%" min="0" max="100"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+    
+                    <h4>Bloom Taxonomy Pass Marks</h4>
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>R</th>
+                                <th>U</th>
+                                <th>AP</th>
+                                <th>A</th>
+                                <th>E</th>
+                                <th>C</th>
+                                <th>P</th>
+                                <th>AF</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><input type="number" class="form-control bloom-pass-mark" placeholder="%" min="0" max="100"></td>
+                                <td><input type="number" class="form-control bloom-pass-mark" placeholder="%" min="0" max="100"></td>
+                                <td><input type="number" class="form-control bloom-pass-mark" placeholder="%" min="0" max="100"></td>
+                                <td><input type="number" class="form-control bloom-pass-mark" placeholder="%" min="0" max="100"></td>
+                                <td><input type="number" class="form-control bloom-pass-mark" placeholder="%" min="0" max="100"></td>
+                                <td><input type="number" class="form-control bloom-pass-mark" placeholder="%" min="0" max="100"></td>
+                                <td><input type="number" class="form-control bloom-pass-mark" placeholder="%" min="0" max="100"></td>
+                                <td><input type="number" class="form-control bloom-pass-mark" placeholder="%" min="0" max="100"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="savePassMarks">Save Pass Marks</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- CLO Assignment Accordion -->
+    <div class="container mt-4">
+        <div class="accordion" id="cloAccordion">
+            <div class="accordion-item collapse" id="clo-1">
+                <h2 class="accordion-header">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne">
+                        CLO Assignment for row 1
+                    </button>
+                </h2>
+                <div id="collapseOne" class="accordion-collapse collapse show">
+                    <div class="accordion-body">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Bloom Taxonomy</th>
+                                    <th>Learning Outcome</th>
+                                    <th>% Allocated</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clo-table">
+                                <tr>
+                                    <td>
+                                        <select class="form-select">
+                                            <option value="R">R: Remembering</option>
+                                            <option value="U">U: Understand</option>
+                                            <option value="AP">AP: Applying</option>
+                                            <option value="A">A: Analysing</option>
+                                            <option value="E">E: Evaluating</option>
+                                            <option value="C">C: Creating</option>
+                                            <option value="P">P: Psychomotor</option>
+                                            <option value="AF">AF: Affective</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select class="form-select clo-select">
+                                            <option value="LO1">CLO1</option>
+                                            <option value="LO2">CLO2</option>
+                                            <option value="LO3">CLO3</option>
+                                            <option value="LO4">CLO4</option>
+                                            <option value="LO5">CLO5</option>
+                                            <option value="LO6">CLO6</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input type="number" class="form-control clo-percent" placeholder="%" min="0" max="100" />
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-danger btn-sm remove-clo">Remove</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <button type="button" class="btn btn-primary btn-sm addCloRow">Add CLO</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <button id="nextButton" class="btn btn-primary btn-lg">Next</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+
+    // Listen for changes on the courseCode dropdown
+    document.getElementById("courseCode").addEventListener("change", function () {
+        const courseCode = this.value;
+        const cloTableBody = document.querySelector("#cloTable tbody");
+        cloTableBody.innerHTML = "";
+
+        if (!courseCode) {
+            // If no course code is selected, optionally display a message.
+            cloTableBody.innerHTML = `<tr><td colspan="4">Please select a course code to view CLO data.</td></tr>`;
+            return;
+        }
+
+    // Fetch CLO data from the PHP endpoint
+    fetch("get_course_learning_outcome.php?course_code=" + encodeURIComponent(courseCode))
+    .then(response => {
+        if (!response.ok) {
+            throw new Error("Network response was not ok");
+        }
+        return response.json();
+    })
+
+    .then(data => {
+        // Check if there's an error or no data
+        if (data.error) {
+            cloTableBody.innerHTML = `<tr><td colspan="4">${data.error}</td></tr>`;
+            return;
+        }
+        if (data.length === 0) {
+            cloTableBody.innerHTML = `<tr><td colspan="4">No CLO data available for the selected course.</td></tr>`;
+            return;
+        }
+
+        // Populate the CLO table with retrieved data
+        data.forEach(item => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+            <td>${item.clo_code}</td>
+            <td>${item.description} (${item.cluster_code}, ${item.plo_code})</td>
+            <td>${item.bloom_taxonomy}</td>
+            <td>${item.plo_code}</td>
+            `;
+            cloTableBody.appendChild(tr);
+        });
+    })
+    .catch(error => {
+        cloTableBody.innerHTML = `<tr><td colspan="4">Error: ${error.message}</td></tr>`; 
+    });
+});
+
+    // Fetch and populate the programme dropdown
+    fetch('get_programmes.php')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            const programmeDropdown = document.getElementById('programme');
+
+            data.forEach(programme => {
+                const option = document.createElement('option');
+                option.value = programme.programme_code;
+                option.textContent = programme.programme_name;
+                programmeDropdown.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Error fetching programmes:', error));
+
+    // Enable and populate course codes based on selected programme
+    document.getElementById('programme').addEventListener('change', function () {
+        const programmeCode = this.value;
+        const courseCodeDropdown = document.getElementById('courseCode');
+        const courseNameInput = document.getElementById('courseName');
+
+        courseCodeDropdown.innerHTML = '<option value="">Select Course Code</option>';
+        courseCodeDropdown.disabled = true;
+        courseNameInput.value = '';
+
+        if (programmeCode) {
+            fetch(`get_courses.php?programme_code=${programmeCode}`)
+                .then(response => response.json())
+                .then(data => {
+                    courseCodeDropdown.disabled = false;
+
+                    data.forEach(course => {
+                        const option = document.createElement('option');
+                        option.value = course.course_code;
+                        option.dataset.courseName = course.course_name;
+                        option.textContent = course.course_code;
+                        courseCodeDropdown.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Error fetching courses:', error));
+        }
+    });
+
+    // Update course name based on selected course code
+    document.getElementById('courseCode').addEventListener('change', function () {
+        const selectedOption = this.options[this.selectedIndex];
+        const courseNameInput = document.getElementById('courseName');
+        courseNameInput.value = selectedOption.dataset.courseName || '';
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+
+        function validateWeightage() {
+    const courseworkWeightInput = parseFloat(document.getElementById("courseworkWeight").value) || 0;
+    const examWeightInput = parseFloat(document.getElementById("examWeight").value) || 0;
+
+    if (isNaN(courseworkWeightInput) || isNaN(examWeightInput)) {
+        alert("Please enter valid weightage values.");
+        return;
+    }
+
+    if (courseworkWeightInput + examWeightInput !== 100) {
+        document.getElementById("weightageError").style.display = "block";
+        document.getElementById("weightageError").textContent = "The combined weightage must equal 100%.";
+    } else {
+        document.getElementById("weightageError").style.display = "none";
+    }
+}
+
+    document.getElementById("courseworkWeight").addEventListener("input", validateWeightage);
+    document.getElementById("examWeight").addEventListener("input", validateWeightage);
+
+        const passMarks = JSON.parse(localStorage.getItem("passMarks")) || {};
+
+        // Function to attach event listeners to "Manage Pass Marks" button
+        function attachManagePassMarksListeners() {
+            document.querySelectorAll(".managePassMarks").forEach((button) => {
+                button.addEventListener("click", function () {
+                    const passMarkModal = new bootstrap.Modal(document.getElementById("passMarkModal"));
+                    const courseworkName = this.closest("tr").querySelector("input[type='text']").value;
+
+                    // Load existing data for this coursework or final exam
+                    const courseworkPassMarks = passMarks[courseworkName] || {
+                        clo: Array(6).fill(0),
+                        bloom: Array(8).fill(0),
+                    };
+        
+                    // Populate modal fields
+                    document.querySelectorAll(".clo-pass-mark").forEach((input, idx) => {
+                        input.value = courseworkPassMarks.clo[idx] || "";
+                    });
+                    document.querySelectorAll(".bloom-pass-mark").forEach((input, idx) => {
+                        input.value = courseworkPassMarks.bloom[idx] || "";
+                    });
+
+                    // Show the modal
+                    passMarkModal.show();
+        
+                    // Save pass marks when "Save" button is clicked
+                    const saveButton = document.getElementById("savePassMarks");
+                    saveButton.onclick = function () {
+                        passMarks[courseworkName] = {
+                            clo: [...document.querySelectorAll(".clo-pass-mark")].map((input) => parseInt(input.value || 0)),
+                            bloom: [...document.querySelectorAll(".bloom-pass-mark")].map((input) => parseInt(input.value || 0)),
+                        };
+
+                        localStorage.setItem("passMarks", JSON.stringify(passMarks));
+
+                        passMarkModal.hide();
+                        console.log("Pass Marks Saved for:", courseworkName, passMarks[courseworkName]);
+                    };
+                });
+            });
+        }
+
+  // Attach initial listeners to "Manage Pass Marks" button
+  attachManagePassMarksListeners();
+
+  // Adding coursework rows dynamically
+  document.getElementById("addCourseworkRow").addEventListener("click", function () {
+    const courseworkTable = document.getElementById("coursework-table");
+    if (courseworkTable.rows.length === 1 && !courseworkTable.rows[0].querySelector("input")) {
+    courseworkTable.deleteRow(0);
+}
+    const rowCount = courseworkTable.rows.length + 1;
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+      <td><input type="text" class="form-control coursework-title" placeholder="e.g., Assignment ${rowCount}" /></td>
+      <td><input type="number" class="form-control coursework-percent" min="0" max="100" placeholder="%" /></td>
+      <td>
+        <button type="button" class="btn btn-primary btn-sm add-clo" data-bs-toggle="collapse" data-bs-target="#clo-coursework-${rowCount}">
+          Manage CLOs
+        </button>
+        <button type="button" class="btn btn-primary btn-sm managePassMarks">Manage Pass Marks</button>
+      </td>
+    `;
+
+    courseworkTable.appendChild(row);
+    attachManagePassMarksListeners(); // Reattach listeners for dynamically added buttons
+
+
+        // Add a new accordion item for this coursework
+        const cloAccordion = document.createElement("div");
+        cloAccordion.className = "accordion-item";
+        cloAccordion.id = `clo-coursework-${rowCount}`;
+        cloAccordion.innerHTML = `
+            <h2 class="accordion-header">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-coursework-${rowCount}">
+                    CLO Assignment for Assignment ${rowCount}
+                </button>
+            </h2>
+            <div id="collapse-coursework-${rowCount}" class="accordion-collapse collapse">
+                <div class="accordion-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Bloom Taxonomy</th>
+                                <th>Learning Outcome</th>
+                                <th>% Allocated</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <select class="form-select bloom-taxonomy">
+                                        <option value="Remembering">R: Remembering</option>
+                                        <option value="Understanding">U: Understand</option>
+                                        <option value="Applying">AP: Applying</option>
+                                        <option value="Analysing">A: Analysing</option>
+                                        <option value="Evaluating">E: Evaluating</option>
+                                        <option value="Creating">C: Creating</option>                    
+                                        <option value="Psychomotor">P: Psychomotor</option>
+                                        <option value="Affective">AF: Affective</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <select class="form-select clo-select">
+                                        <option value="LO1">LO1</option>
+                                        <option value="LO2">LO2</option>
+                                        <option value="LO3">LO3</option>
+                                        <option value="LO4">LO4</option>
+                                        <option value="LO5">LO5</option>
+                                        <option value="LO6">LO6</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control clo-percent" placeholder="%" min="0" max="100" />
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-danger btn-sm remove-clo">Remove</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <button type="button" class="btn btn-primary btn-sm addCloRow">Add CLO</button>
+                    <div class="alert alert-danger mt-3 d-none clo-warning" role="alert">
+                        Total CLO allocation exceeds the assigned percentage for this coursework!
+                    </div>
+                </div>
+            </div>
+        `;
+        courseworkTable.parentElement.appendChild(cloAccordion);
+
+        // Attach event listener to update the CLO title when the coursework title changes
+        row.querySelector(".coursework-title").addEventListener("input", function () {
+            const title = this.value || `Assignment ${rowCount}`;
+            cloAccordion.querySelector(".accordion-button").textContent = `CLO Assignment for ${title}`;
+        });
+
+        // Re-attach event listeners for dynamically added "Manage Pass Marks" buttons
+        attachManagePassMarksListeners();
+    });
+
+    // Add Final Exam Row
+    document.getElementById("addFinalExamRow").addEventListener("click", function () {
+        const finalExamTable = document.getElementById("finalExam-table");
+        if (finalExamTable.rows.length === 1 && !finalExamTable.rows[0].querySelector("input")) {
+    finalExamTable.deleteRow(0);
+}
+        const rowCount = finalExamTable.rows.length + 1; // Count the rows to assign unique IDs
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+            <td><input type="text" class="form-control finalExam-title" placeholder="e.g., Question ${rowCount}" /></td>
+            <td><input type="number" class="form-control finalExam-percent" min="0" max="100" placeholder="%" onchange="validateExamPercentages()" /></td>
+            <td>
+                <button type="button" class="btn btn-primary btn-sm add-clo" data-bs-toggle="collapse" data-bs-target="#clo-final-${rowCount}">
+                    Manage CLOs
+                </button>
+                <button type="button" class="btn btn-primary btn-sm managePassMarks">Manage Pass Marks</button>
+            </td>
+        `;
+
+        finalExamTable.appendChild(row);
+
+        // Add a new accordion item for this final exam
+        const cloAccordion = document.createElement("div");
+        cloAccordion.className = "accordion-item";
+        cloAccordion.id = `clo-final-${rowCount}`;
+        cloAccordion.innerHTML = `
+            <h2 class="accordion-header">
+                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-final-${rowCount}">
+                    CLO Assignment for Question ${rowCount}
+                </button>
+            </h2>
+            <div id="collapse-final-${rowCount}" class="accordion-collapse collapse">
+                <div class="accordion-body">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Bloom Taxonomy</th>
+                                <th>Learning Outcome</th>
+                                <th>% Allocated</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <select class="form-select bloom-taxonomy">
+                                        <option value="Remembering">R: Remembering</option>
+                                        <option value="Understanding">U: Understand</option>
+                                        <option value="Applying">AP: Applying</option>
+                                        <option value="Analysing">A: Analysing</option>
+                                        <option value="Evaluating">E: Evaluating</option>
+                                        <option value="Creating">C: Creating</option>                    
+                                        <option value="Psychomotor">P: Psychomotor</option>
+                                        <option value="Affective">AF: Affective</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <select class="form-select clo-select">
+                                        <option value="LO1">LO1</option>
+                                        <option value="LO2">LO2</option>
+                                        <option value="LO3">LO3</option>
+                                        <option value="LO4">LO4</option>
+                                        <option value="LO5">LO5</option>
+                                        <option value="LO6">LO6</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control clo-percent" placeholder="%" min="0" max="100" />
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-danger btn-sm remove-clo">Remove</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <button type="button" class="btn btn-primary btn-sm addCloRow">Add CLO</button>
+                    <div class="alert alert-danger mt-3 d-none clo-warning" role="alert">
+                        Total CLO allocation exceeds the assigned percentage for this final exam!
+                    </div>
+                </div>
+            </div>
+        `;
+        finalExamTable.parentElement.appendChild(cloAccordion);
+
+        // Attach event listener to update the CLO title when the final exam title changes
+        row.querySelector(".finalExam-title").addEventListener("input", function () {
+            const title = this.value || `Question ${rowCount}`;
+            cloAccordion.querySelector(".accordion-button").textContent = `CLO Assignment for ${title}`;
+        });
+
+        // Re-attach event listeners for dynamically added "Manage Pass Marks" button
+        attachManagePassMarksListeners();
+    });
+
+    // Event delegation for dynamically added "Manage CLOs" buttons
+    document.addEventListener("click", function (event) {
+        if (event.target.classList.contains("add-clo")) {
+            const targetId = event.target.getAttribute("data-bs-target");
+            const targetElement = document.querySelector(targetId);
+
+            if (targetElement) {
+                // Toggle the collapse manually
+                const collapseInstance = new bootstrap.Collapse(targetElement);
+                collapseInstance.toggle();
+            }
+        }
+    });
+
+    document.addEventListener('hidden.bs.modal', function (event) {
+    // Restore scrollbar
+    document.body.style.overflow = 'auto';
+    document.body.style.paddingRight = '0px';
+});
+
+document.getElementById("nextButton").addEventListener("click", function () {
+    const totalStudents = document.getElementById("totalStudents").value;
+
+    // Collect coursework data
+    const courseworkRows = Array.from(document.querySelectorAll("#coursework-table tr"))
+    .map(row => {
+        const detailsInput = row.querySelector(".coursework-title");
+        const percentInput = row.querySelector(".coursework-percent");
+        
+        // Find the associated accordion body for CLOs
+        const accordionId = row.querySelector(".add-clo")?.getAttribute("data-bs-target");
+        const accordionBody = document.querySelector(accordionId + " .accordion-body");
+
+        // Collect all CLOs from the accordion
+        const clos = [];
+        if (accordionBody) {
+            const cloRows = accordionBody.querySelectorAll("tbody tr");
+            cloRows.forEach(cloRow => {
+                const lo = cloRow.querySelector(".clo-select").value;
+                const percent = cloRow.querySelector(".clo-percent").value; 
+                const domain = cloRow.querySelector(".bloom-taxonomy").value;
+                if (lo && percent) clos.push({ 
+                    lo, 
+                    percent: parseFloat(percent),
+                    domain 
+                });
+            });
+        }
+
+            return {
+                details: detailsInput?.value.trim() || "",
+                percent: percentInput?.value.trim() || "",
+                clos // Store all CLOs for coursework
+            };
+        })
+        .filter(row => row.details && row.percent);
+
+    // Collect final exam data
+    const finalExamRows = Array.from(document.querySelectorAll("#finalExam-table tr"))
+        .map(row => {
+            const detailsInput = row.querySelector(".finalExam-title");
+            const percentInput = row.querySelector(".finalExam-percent");
+
+            // Find the associated accordion body for CLOs
+            const accordionId = row.querySelector(".add-clo")?.getAttribute("data-bs-target");
+            const accordionBody = document.querySelector(accordionId + " .accordion-body");
+
+            //Collect all CLOs from the accordion
+            const clos = []
+            if (accordionBody) {
+                const cloRows = accordionBody.querySelectorAll("tbody tr");
+                cloRows.forEach(cloRow => {
+                    const lo = cloRow.querySelector(".clo-select").value;
+                    const percent = cloRow.querySelector(".clo-percent").value;
+                    const domain = cloRow.querySelector(".bloom-taxonomy").value;
+                    if (lo && percent) clos.push({ 
+                        lo, 
+                        percent: parseFloat(percent),
+                        domain 
+                    });
+                });
+            }
+
+            return {
+                details: detailsInput ? detailsInput.value.trim() : "",
+                percent: percentInput ? percentInput.value.trim() : "",
+                clos, // Store all CLOs for final exam
+            };
+        })
+        .filter(row => row.details && row.percent); // Filter out rows with empty details or percent
+
+    
+        const moduleData = {
+            courseworkWeight: document.getElementById("courseworkWeight").value || "0",
+            examWeight: document.getElementById("examWeight").value || "0",
+            courseworkRows,  
+            finalExamRows,
+            programme: document.getElementById("programme").value,
+            courseCode: document.getElementById("courseCode").value,
+            courseName: document.getElementById("courseName").value,
+            lecturerName: document.getElementById("lecturerName").value,
+            semester: document.getElementById("semester").value,
+            totalStudents: document.getElementById("totalStudents").value,
+        };
+
+        console.log("Raw Coursework Weight:", document.getElementById("courseworkWeight").value);
+        console.log("Raw Exam Weight:", document.getElementById("examWeight").value);
+        console.log("Module Data Collected:", moduleData);
+
+    // Save to localStorage
+    localStorage.setItem("moduleData", JSON.stringify(moduleData));
+
+    window.location.href = "student.html";
+});
+
+    // Add CLO Row
+    document.addEventListener("click", function (event) {
+        if (event.target.classList.contains("addCloRow")) {
+            const accordionBody = event.target.closest(".accordion-body");
+            const cloTable = accordionBody.querySelector("tbody");
+            const row = document.createElement("tr");
+
+            row.innerHTML = `
+                <td>
+                    <select class="form-select bloom-taxonomy">
+                        <option value="Remembering">R: Remembering</option>
+                        <option value="Understanding">U: Understand</option>
+                        <option value="Applying">AP: Applying</option>
+                        <option value="Analysing">A: Analysing</option>
+                        <option value="Evaluating">E: Evaluating</option>
+                        <option value="Creating">C: Creating</option>
+                        <option value="Psychomotor">P: Psychomotor</option>
+                        <option value="Affective">AF: Affective</option>
+                    </select>
+                </td>
+                <td>
+                    <select class="form-select clo-select">
+                        <option value="LO1">LO1</option>
+                        <option value="LO2">LO2</option>
+                        <option value="LO3">LO3</option>
+                        <option value="LO4">LO4</option>
+                        <option value="LO5">LO5</option>
+                        <option value="LO6">LO6</option>
+                    </select>
+                </td>
+                <td>
+                    <input type="number" class="form-control clo-percent" placeholder="%" min="0" max="100" />
+                </td>
+                <td>
+                    <button type="button" class="btn btn-danger btn-sm remove-clo">Remove</button>
+                </td>
+            `;
+
+            cloTable.appendChild(row);
+            validateCLOAllocation(event.target.closest(".accordion-body"));
+        }
+    });
+
+    // Remove CLO Row
+    document.addEventListener("click", function (event) {
+        if (event.target.classList.contains("remove-clo")) {
+            const accordionBody = event.target.closest(".accordion-body");
+            event.target.closest("tr").remove();
+            validateCLOAllocation(accordionBody);
+        }
+    });
+
+    function validateCLOAllocation(accordionBody) {
+    if (!accordionBody) {
+        console.warn("validateCLOAllocation: accordionBody is not defined.");
+        return;
+    }
+
+    // Find the parent accordion item and its ID
+    const accordionItem = accordionBody.closest('.accordion-item');
+    if (!accordionItem) {
+        console.warn("Accordion item not found.");
+        return;
+    }
+    const accordionId = accordionItem.id;
+
+    // Find the "Manage CLOs" button that targets this accordion
+    const manageCloButton = document.querySelector(`[data-bs-target="#${accordionId}"]`);
+    if (!manageCloButton) {
+        console.warn("Manage CLOs button not found.");
+        return;
+    }
+
+    // Determine if the row is in coursework or final exam
+    const isCoursework = manageCloButton.closest('tbody').id === 'coursework-table';
+    const percentageClass = isCoursework ? '.coursework-percent' : '.finalExam-percent';
+
+    // Traverse to the row containing the percentage input
+    const relatedRow = manageCloButton.closest('tr');
+    if (!relatedRow) {
+        console.warn("Related row not found.");
+        return;
+    }
+
+    const percentageInput = relatedRow.querySelector(percentageClass);
+    if (!percentageInput) {
+        console.warn("Percentage input not found.");
+        return;
+    }
+
+    const assignedPercentage = parseFloat(percentageInput.value || "0");
+    const cloPercentInputs = accordionBody.querySelectorAll('.clo-percent');
+    let totalCLOPercent = 0;
+
+    cloPercentInputs.forEach(input => {
+        totalCLOPercent += parseFloat(input.value || "0");
+    });
+
+    const warningElement = accordionBody.querySelector('.clo-warning');
+    if (totalCLOPercent > assignedPercentage) {
+        warningElement?.classList.remove('d-none');
+    } else {
+        warningElement?.classList.add('d-none');
+    }
+}
+    // Validate CLO allocation on input change
+    document.addEventListener("input", function (event) {
+        if (event.target.classList.contains("clo-percent")) {
+            const accordionBody = event.target.closest(".accordion-body");
+            validateCLOAllocation(accordionBody);
+        }
+    });
+});
+
+document.addEventListener('hidden.bs.modal', function (event) {
+    // Ensure the backdrop is removed when the modal is hidden
+    const backdrops = document.querySelectorAll('.modal-backdrop');
+    backdrops.forEach((backdrop) => backdrop.parentNode.removeChild(backdrop));
+});
+
+// Add validation for exam question percentages
+function validateExamPercentages() {
+    const percentInputs = document.querySelectorAll('.exam-percent');
+    const total = Array.from(percentInputs)
+        .reduce((sum, input) => sum + (parseFloat(input.value) || 0), 0);
+    
+    const examPercentageError = document.getElementById('examPercentageError');
+    if (!examPercentageError) {
+        const errorDiv = document.createElement('div');
+        errorDiv.id = 'examPercentageError';
+        errorDiv.style.color = 'red';
+        document.querySelector('.final-exam-section').appendChild(errorDiv);
+    }
+
+    if (total !== 100) {
+        examPercentageError.textContent = 
+            `Question percentages must sum to 100%. Current total: ${total}%`;
+        return false;
+    } else {
+        examPercentageError.textContent = '';
+        return true;
+    }
+}
+</script>
+</body>
+</html>

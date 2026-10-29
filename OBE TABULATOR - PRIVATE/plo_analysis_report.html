@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" type="text/css" href="plo_analysis_style.css">
+    <title>PLO Analysis</title>
+</head>
+<body>
+    <div class="container">
+        <h2 class="text-center mt-4">PLO Analysis</h2>
+
+        <!-- Course Details -->
+        <div class="card mt-3">
+            <div class="card-body">
+                <h4>Course Details</h4>
+                <p><strong>Course Code:</strong> <span id="courseCode"></span></p>
+                <p><strong>Course Name:</strong> <span id="courseName"></span></p>
+                <p><strong>Programme:</strong> <span id="programme"></span></p>
+                <p><strong>Lecturer Name:</strong> <span id="lecturerName"></span></p>
+                <p><strong>Semester:</strong> <span id="semester"></span></p>
+            </div>
+        </div>
+
+        <!-- PLO Analysis Table -->
+        <div class="table-section">
+            <h3>PLO Achievement Analysis</h3>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Student ID</th>
+                        <th>Student Name</th>
+                        <th>PLO1</th>
+                        <th>PLO2</th>
+                        <th>PLO3</th>
+                        <th>PLO4</th>
+                        <th>PLO5</th>
+                        <th>PLO6</th>
+                        <th>PLO7</th>
+                        <th>PLO8</th>
+                        <th>PLO9</th>
+                        <th>PLO10</th>
+                        <th>PLO11</th>
+                    </tr>
+                </thead>
+                <tbody id="ploTable">
+                    <!-- Table rows will be dynamically added here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            try {
+                // Parse stored data
+                const moduleData = JSON.parse(localStorage.getItem("moduleData"));
+                const studentData = JSON.parse(localStorage.getItem("studentData"));
+                const cloData = JSON.parse(localStorage.getItem("cloData"));
+
+                console.log("Loaded data:", { moduleData, studentData, cloData });
+
+                console.log("Student Data from localStorage:", studentData);
+                studentData.forEach(student => {
+                    console.log(`Student ${student.name} - Coursework: ${student.coursework}, Final Exam: ${student.finalExam}`);
+                });
+
+                if (!moduleData || !studentData || !cloData) {
+                    throw new Error("Missing required data");
+                }
+
+                if (!studentData || !studentData.every(s => s.id || s.student_id)) {
+                    throw new Error("Student data is missing or incomplete");
+                }
+
+                // Map student data to ensure consistent ID field
+                const mappedStudentData = studentData.map(student => ({
+                    ...student,
+                    id: student.id || student.student_id,
+                    student_id: student.student_id || student.id,
+                    name: student.name || student.student_name
+                }));
+
+                console.log("Mapped student data:", mappedStudentData);
+
+                // Populate course details
+                document.getElementById("courseCode").textContent = moduleData.courseCode || '';
+                document.getElementById("courseName").textContent = moduleData.courseName || '';
+                document.getElementById("programme").textContent = moduleData.programme || '';
+                document.getElementById("lecturerName").textContent = moduleData.lecturerName || '';
+                document.getElementById("semester").textContent = moduleData.semester || '';
+
+                // Get active PLOs and update table
+                const activePLOs = getActivePLOs(moduleData, cloData);
+                console.log("Active PLOs:", activePLOs);
+
+                // Update table headers
+                const headerRow = document.querySelector("#ploTable").parentElement.querySelector("thead tr");
+                headerRow.innerHTML = `
+                    <th>Student ID</th>
+                    <th>Student Name</th>
+                    ${activePLOs.map(plo => `<th>${plo}</th>`).join('')}
+                `;
+
+                // Calculate and display PLO results
+                if (Array.isArray(studentData) && studentData.length > 0) {
+                    const ploTable = document.getElementById("ploTable");
+                    studentData.forEach(student => {
+                        console.log("Processing student:", student);
+                        const ploResults = calculatePLOAchievement(student, moduleData, cloData);
+                        const studentId = student.student_id || student.id || ''; // Get ID from either property
+                        const studentName = student.name;
+                        
+                        // Create table row
+                        const row = document.createElement("tr");
+                        row.innerHTML = `
+                            <td>${studentId}</td>
+                            <td>${studentName}</td>
+                            ${activePLOs.map(plo => `<td>${ploResults[plo] || '0.00'}</td>`).join('')}
+                        `;
+                        
+                        console.log("Adding row for student:", {
+                            id: studentId,
+                            name: studentName,
+                            ploResults
+                        });
+                        
+                        ploTable.appendChild(row);
+                    });
+                } else {
+                    console.error("No student data available");
+                    document.getElementById("ploTable").innerHTML = `
+                        <tr>
+                            <td colspan="${2 + activePLOs.length}" class="text-center">
+                                No student data available
+                            </td>
+                        </tr>
+                    `;
+                }
+
+                // Submit button to insert PLO analysis data to database
+                const submitButton = document.createElement('button');
+                submitButton.className = 'btn btn-primary mt-3';
+                submitButton.textContent = 'Save PLO Analysis';
+                submitButton.onclick = async function() {
+                    try {
+                        const data = {
+                            courseDetails: {
+                                course_code: moduleData.courseCode,
+                                course_name: moduleData.courseName,
+                                programme_code: moduleData.programme,
+                                lecturer_name: moduleData.lecturerName,
+                                semester: moduleData.semester
+                            },
+                            studentData: studentData.map(student => {
+                                const ploResults = calculatePLOAchievement(student, moduleData, cloData);
+                                const formattedPloResults = {};
+                                for (let i = 1; i <= 15; i++) {
+                                    formattedPloResults[`plo${i}`] = ploResults[`PLO${i}`] || 'NA';
+                                }
+                                
+                                const studentId = student.student_id || student.id;
+                                if (!studentId) {
+                                    throw new Error(`Missing student ID for student: ${student.name}`);
+                                }
+
+                                return {
+                                    student_id: studentId,
+                                    student_name: student.student_name || student.name,
+                                    ...formattedPloResults
+                                };
+                            })
+                        };
+
+                        console.log("Sending PLO data:", data);
+
+                        // Validate data before sending
+                        if (!data.studentData.every(s => s.student_id)) {
+                            throw new Error("All students must have an ID");
+                        }
+
+                        const response = await fetch('store_plo_data.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(data)
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+
+                        const result = await response.json();
+                        console.log("Server response:", result);
+                        
+                        if (result.success) {
+                            alert('PLO analysis data saved successfully!');
+                        } else {
+                            throw new Error(result.message || 'Failed to save PLO data');
+                        }
+                    } catch (error) {
+                        console.error('Error saving PLO data:', error);
+                        alert(`Error saving PLO analysis data: ${error.message}`);
+                    }
+                };
+
+                document.querySelector('.table-section').appendChild(submitButton);
+
+            } catch (error) {
+                console.error("Error:", error);
+                alert("Error loading data: " + error.message);
+            }
+        });
+
+        function calculatePLOAchievement(student, moduleData, cloData) {
+            console.log("Calculating PLO for student:", student);
+
+            // Initialize PLO tracking objects
+            const ploScores = {};
+
+            cloData.forEach(clo => {
+                if (clo.plo_code) {
+                    if (!ploScores[clo.plo_code]) {
+                        ploScores[clo.plo_code] = {
+                            courseworkScore: 0,
+                            examScore: 0,
+                        };
+                    }
+                }
+            });
+
+            // Process coursework contributions
+            moduleData.courseworkRows?.forEach((coursework, idx) => {
+                console.log(`Processing coursework row ${idx}:`, coursework);
+                console.log(`Student ${student.name}, Coursework data:`, student.coursework);
+                console.log(`Student ${student.name}, Coursework index ${idx}:`, student.coursework?.[idx]);
+                const studentScore = parseFloat(student.coursework?.[idx] || 0);
+                console.log(`Student score for coursework ${idx}:`, studentScore);
+                coursework.clos?.forEach(clo => {
+                    const ploCode = cloData.find(c => c.clo_code === `CLO${clo.lo.replace('LO', '')}`)?.plo_code;
+                    console.log(`PLO code for CLO ${clo.lo}:`, ploCode);
+                    if (ploCode && ploScores[ploCode]) {
+                        ploScores[ploCode].courseworkScore += studentScore;
+                    }
+                });
+            });
+
+            // Process final exam contributions
+            moduleData.finalExamRows?.forEach((exam, idx) => {
+                console.log(`Processing final exam row ${idx}:`, exam);
+                console.log(`Student ${student.name}, Final Exam data:`, student.finalExam);
+                console.log(`Student ${student.name}, Final Exam index ${idx}:`, student.finalExam?.[idx]);
+                const studentScore = parseFloat(student.finalExam?.[idx] || 0);
+                console.log(`Student score for final exam ${idx}:`, studentScore);
+                exam.clos?.forEach(clo => {
+                    const ploCode = cloData.find(c => c.clo_code === `CLO${clo.lo.replace('LO', '')}`)?.plo_code;
+                    console.log(`PLO code for CLO ${clo.lo}:`, ploCode);
+                    if (ploCode && ploScores[ploCode]) {
+                        ploScores[ploCode].examScore += studentScore;
+                    }
+                });
+            });
+
+            // Calculate final percentages
+            const results = {};
+            Object.entries(ploScores).forEach(([ploCode, data]) => {
+                let courseworkPercentage = 0;
+                let examPercentage = 0;
+
+                // Find the coursework and exam percentages
+                const courseworkPercent = parseFloat(moduleData.courseworkRows[0]?.percent || 0);
+                const examPercent = parseFloat(moduleData.finalExamRows[0]?.percent || 0);
+
+                if (courseworkPercent > 0) {
+                    courseworkPercentage = (data.courseworkScore / courseworkPercent) * 100;
+                }
+
+                if (examPercent > 0) {
+                    examPercentage = (data.examScore / 100) * 100;
+                }
+
+                const totalPercentage = courseworkPercentage + examPercentage;
+                results[ploCode] = totalPercentage.toFixed(2);
+
+                console.log(`${student.name} - ${ploCode} calculation:`, {
+                    courseworkPercentage,
+                    examPercentage,
+                    totalPercentage,
+                });
+            });
+
+            return results;
+        }
+
+        function getActivePLOs(moduleData, cloData) {
+            const activePLOs = new Set();
+            
+            if (Array.isArray(cloData)) {
+                cloData.forEach(clo => {
+                    if (clo.plo_code) {
+                        activePLOs.add(clo.plo_code);
+                    }
+                });
+            }
+
+            return Array.from(activePLOs).sort();
+        }
+
+        function updateTableHeaders(activePLOs) {
+            const headerRow = document.querySelector("#ploTable").parentElement.querySelector("thead tr");
+            headerRow.innerHTML = `
+                <th>Student ID</th>
+                <th>Student Name</th>
+                ${activePLOs.map(ploNum => `<th>PLO${ploNum}</th>`).join('')}
+            `;
+        }
+
+        function addStudentRow(ploTable, student, ploResults, activePLOs) {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+                <td>${student.id || ""}</td>
+                <td>${student.name}</td>
+                ${activePLOs.map(ploNum => `<td>${ploResults[`PLO${ploNum}`]}</td>`).join('')}
+            `;
+            ploTable.appendChild(row);
+        }
+    </script>
+</body>
+</html>
